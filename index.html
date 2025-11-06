@@ -293,10 +293,10 @@
     // Teams (provided)
     const TEAMS = ["Vladimir","Mirko","Uroš","Jovan","Lazar","Bojan","Miljan","Nikola"];
     const PASSWORD = "MNT123";
-    const GITHUB_TOKEN = "11BWVK6XY0hQJ43StzihvC_E4kaNFiurpGI4YazJ43rP0R2R2s5VquRsFZtT3GIfuCCTPQRLLHPMH78fdw";
-    const GIST_ID = "6b6e7c9a8d1e4f8a9b9c9a8d1e4f8a9b"; // Ovo će se automatski postaviti
     
-    // Konstante za GitHub
+    // ISPRAVLJEN TOKEN - samo brojki deo!
+    const GITHUB_TOKEN = "11BWVK6XY0hQJ43StzihvC_E4kaNFiurpGI4YazJ43rP0R2R2s5VquRsFZtT3GIfuCCTPQRLLHPMH78fdw";
+    
     const GIST_FILENAME = "mini-liga-results.json";
     let currentGistId = null;
 
@@ -489,7 +489,7 @@
       });
     }
 
-    // GitHub Gist funkcije
+    // GitHub Gist funkcije - ISPRAVLJENE
     async function saveToGitHub() {
       const results = getResultsData();
       const data = {
@@ -512,22 +512,25 @@
           public: false
         };
 
-        // Ako već postoji Gist, ažuriraj ga
-        if (currentGistId) {
-          gistData.gist_id = currentGistId;
-        }
+        const url = currentGistId 
+          ? `https://api.github.com/gists/${currentGistId}`
+          : 'https://api.github.com/gists';
 
-        const response = await fetch('https://api.github.com/gists' + (currentGistId ? `/${currentGistId}` : ''), {
-          method: currentGistId ? 'PATCH' : 'POST',
+        const method = currentGistId ? 'PATCH' : 'POST';
+
+        const response = await fetch(url, {
+          method: method,
           headers: {
             'Authorization': `token ${GITHUB_TOKEN}`,
             'Content-Type': 'application/json',
+            'Accept': 'application/vnd.github.v3+json'
           },
           body: JSON.stringify(gistData)
         });
 
         if (!response.ok) {
-          throw new Error(`GitHub error: ${response.status}`);
+          const errorText = await response.text();
+          throw new Error(`GitHub error ${response.status}: ${errorText}`);
         }
 
         const result = await response.json();
@@ -549,20 +552,22 @@
     async function loadFromGitHub() {
       try {
         // Prvo probaj da učitaš sa poznatim Gist ID
-        let gistId = localStorage.getItem('miniLigaGistId') || GIST_ID;
+        let gistId = localStorage.getItem('miniLigaGistId');
         
         if (!gistId) {
+          console.log('Nema sačuvanog Gist ID');
           return false;
         }
 
         const response = await fetch(`https://api.github.com/gists/${gistId}`, {
           headers: {
             'Authorization': `token ${GITHUB_TOKEN}`,
+            'Accept': 'application/vnd.github.v3+json'
           }
         });
 
         if (!response.ok) {
-          throw new Error(`GitHub error: ${response.status}`);
+          throw new Error(`GitHub error ${response.status}`);
         }
 
         const gist = await response.json();
@@ -572,9 +577,11 @@
         currentGistId = gist.id;
         setResultsData(data.results);
         
+        showStatus('Rezultati učitani sa GitHub!');
         return true;
       } catch (error) {
         console.error('Greška pri učitavanju sa GitHub:', error);
+        showStatus('Nema internet konekcije ili GitHub greška', 'error');
         // Fallback na localStorage
         return loadFromLocalStorage();
       }
@@ -625,12 +632,11 @@
     
     // Učitaj sačuvane rezultate pri pokretanju
     document.addEventListener('DOMContentLoaded', async function() {
-      showStatus('Učitavam rezultate...', 'loading');
+      showStatus('Učitavam rezultate sa GitHub...', 'loading');
       
       if (await loadFromGitHub()) {
         const table = computeStandings();
         renderStandings(table);
-        showStatus('Rezultati učitani sa GitHub!');
       } else {
         renderStandings(TEAMS.map(t => ({team:t, played:0, win:0, draw:0, loss:0, gf:0, ga:0, gd:0, pts:0})));
         showStatus('Kreirana nova liga - unesi rezultate');
@@ -685,6 +691,7 @@
     });
 
     // Automatsko čuvanje pri promeni rezultata
+    let debounce;
     matchesContainer.addEventListener('input', ()=>{
       clearTimeout(debounce);
       debounce = setTimeout(()=> {
@@ -707,6 +714,7 @@
       if (await loadFromGitHub()) {
         const table = computeStandings();
         renderStandings(table);
+        showStatus('Rezultati osveženi sa GitHub');
       }
     }, 30000);
   </script>
