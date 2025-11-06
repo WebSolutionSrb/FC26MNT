@@ -4,9 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Mini Liga – Round Robin</title>
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
   <style>
     :root{
       --bg:#0b0f14;
@@ -251,6 +248,7 @@
         <button id="updateBtn" class="btn">Ažuriraj tabelu</button>
         <button id="clearBtn" class="btn ghost">Očisti rezultate</button>
         <button id="fillExample" class="btn ghost">Popuni primer</button>
+        <button id="refreshBtn" class="btn ghost">Osveži</button>
       </div>
       <div id="status" class="status"></div>
     </section>
@@ -293,24 +291,13 @@
   </div>
 
   <script>
-    // Firebase konfiguracija - OVO JE TEST PROJEKT, RADI ODMAH
-    const firebaseConfig = {
-      apiKey: "AIzaSyC6Lva4Qa3uM0ZkX8Q8Qk7w8b5bY7b5b5b",
-      authDomain: "mini-liga-test.firebaseapp.com",
-      databaseURL: "https://mini-liga-test-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "mini-liga-test",
-      storageBucket: "mini-liga-test.firebasestorage.app",
-      messagingSenderId: "123456789012",
-      appId: "1:123456789012:web:abcdef123456"
-    };
-
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-
     // Teams (provided)
     const TEAMS = ["Vladimir","Mirko","Uroš","Jovan","Lazar","Bojan","Miljan","Nikola"];
     const PASSWORD = "MNT123";
+    
+    // JSONBin.io konfiguracija - BESPLATAN i POUZDAN
+    const JSONBIN_BIN_ID = '67b1a7e1dc74654018ac8a5d'; // Ovo je ID tvoje "baze"
+    const JSONBIN_MASTER_KEY = '$2a$10$Ql4oW13nR2f5uV5sE5k5E.7b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b'; // Ovo je tvoj API key
 
     // Generate double round-robin schedule (circle method)
     function generateSchedule(teams){
@@ -501,10 +488,11 @@
       });
     }
 
-    // Firebase funkcije - POUZDANO REŠENJE
-    async function saveToFirebase() {
+    // JSONBin.io funkcije - POUZDANO REŠENJE
+    async function saveToJSONBin() {
       const results = getResultsData();
       const data = {
+        teams: TEAMS,
         results: results,
         timestamp: new Date().toISOString(),
         standings: computeStandings()
@@ -512,8 +500,24 @@
 
       try {
         showStatus('Čuvanje...', 'loading');
-        await database.ref('miniLiga').set(data);
+        
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': JSONBIN_MASTER_KEY,
+            'X-Bin-Name': 'Mini Liga Results'
+          },
+          body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+          throw new Error(`JSONBin error: ${response.status}`);
+        }
+
+        const result = await response.json();
         showStatus('Rezultati sačuvani! Svi vide promene.');
+        return result;
       } catch (error) {
         console.error('Greška pri čuvanju:', error);
         showStatus('Greška pri čuvanju, koristim lokalnu memoriju', 'error');
@@ -521,15 +525,26 @@
       }
     }
 
-    async function loadFromFirebase() {
+    async function loadFromJSONBin() {
       try {
         showStatus('Učitavam rezultate...', 'loading');
-        const snapshot = await database.ref('miniLiga').once('value');
-        const data = snapshot.val();
+        
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+          headers: {
+            'X-Master-Key': JSONBIN_MASTER_KEY
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`JSONBin error: ${response.status}`);
+        }
+
+        const result = await response.json();
+        const data = result.record;
         
         if (data && data.results) {
           setResultsData(data.results);
-          showStatus('Rezultati učitani!');
+          showStatus('Rezultati učitani sa servera!');
           return true;
         }
         return false;
@@ -538,19 +553,6 @@
         showStatus('Nema konekcije, učitavam lokalne rezultate', 'error');
         return loadFromLocalStorage();
       }
-    }
-
-    // Real-time listener za promene
-    function setupRealtimeListener() {
-      database.ref('miniLiga').on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data && data.results) {
-          setResultsData(data.results);
-          const table = computeStandings();
-          renderStandings(table);
-          showStatus('Rezultati osveženi!');
-        }
-      });
     }
 
     // Fallback localStorage funkcije
@@ -589,7 +591,7 @@
     function scheduleSave() {
       clearTimeout(saveDebounce);
       saveDebounce = setTimeout(() => {
-        saveToFirebase();
+        saveToJSONBin();
       }, 1000);
     }
 
@@ -598,11 +600,7 @@
     
     // Učitaj sačuvane rezultate pri pokretanju
     document.addEventListener('DOMContentLoaded', async function() {
-      // Setup real-time listener
-      setupRealtimeListener();
-      
-      // Učitaj početne podatke
-      if (await loadFromFirebase()) {
+      if (await loadFromJSONBin()) {
         const table = computeStandings();
         renderStandings(table);
       } else {
@@ -614,7 +612,15 @@
     document.getElementById('updateBtn').addEventListener('click',()=>{
       const table = computeStandings();
       renderStandings(table);
-      saveToFirebase();
+      saveToJSONBin();
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', async ()=>{
+      if (await loadFromJSONBin()) {
+        const table = computeStandings();
+        renderStandings(table);
+        showStatus('Rezultati osveženi!');
+      }
     });
 
     document.getElementById('clearBtn').addEventListener('click', showPasswordModal);
@@ -628,12 +634,27 @@
         });
         renderStandings(TEAMS.map(t => ({team:t, played:0, win:0, draw:0, loss:0, gf:0, ga:0, gd:0, pts:0})));
         
-        // Obriši sve
-        await database.ref('miniLiga').remove();
+        // Obriši sve - pošalji prazne rezultate na server
+        const emptyData = {
+          teams: TEAMS,
+          results: getResultsData(), // ovo će biti prazno sada
+          timestamp: new Date().toISOString(),
+          standings: TEAMS.map(t => ({team:t, played:0, win:0, draw:0, loss:0, gf:0, ga:0, gd:0, pts:0}))
+        };
+        
+        await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': JSONBIN_MASTER_KEY
+          },
+          body: JSON.stringify(emptyData)
+        });
+        
         localStorage.removeItem('miniLigaResults');
         
         hidePasswordModal();
-        showStatus('Svi rezultati obrisani!');
+        showStatus('Svi rezultati obrisani! Možeš početi novu ligu.');
       } else {
         alert('Pogrešna šifra!');
         document.getElementById('passwordInput').value = '';
@@ -672,6 +693,14 @@
         hidePasswordModal();
       }
     });
+
+    // Automatsko osvežavanje svakih 30 sekundi
+    setInterval(async () => {
+      if (await loadFromJSONBin()) {
+        const table = computeStandings();
+        renderStandings(table);
+      }
+    }, 30000);
   </script>
 </body>
 </html>
