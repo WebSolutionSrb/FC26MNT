@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Mini Liga – Round Robin</title>
   <style>
+    /* OSTAJU ISTI STILOVI KOŠ ŠTO SAM IMAO RANIJE */
     :root{
       --bg:#0b0f14;
       --card:#0f1720;
@@ -17,7 +18,6 @@
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     }
     html,body{height:100%;margin:0;background:var(--bg);color:#e6eef6}
-    /* full-screen background image (logo.jpg) with dark overlay */
     body::before{
       content:"";
       position:fixed;
@@ -36,7 +36,6 @@
       background:linear-gradient(180deg, rgba(2,6,11,0.6), rgba(2,8,14,0.9));
       z-index:0;
     }
-
     .container{
       position:relative;
       z-index:1;
@@ -47,7 +46,6 @@
       gap:20px;
       grid-template-columns: 1fr 420px;
     }
-
     header{
       grid-column:1/-1;
       display:flex;
@@ -64,8 +62,6 @@
     }
     h1{font-size:20px;margin:0}
     .subtitle{color:var(--muted);font-size:13px}
-
-    /* Cards */
     .card{
       background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
       border-radius:var(--radius);
@@ -73,8 +69,6 @@
       box-shadow: 0 8px 30px rgba(2,6,14,0.5);
       border:1px solid var(--glass-border);
     }
-
-    /* Raspored list */
     .matches{
       display:flex;
       flex-direction:column;
@@ -112,8 +106,6 @@
       width:42px;background:transparent;border:1px solid rgba(255,255,255,0.04);padding:6px;border-radius:8px;color:inherit;text-align:center;font-weight:700;
     }
     .kolo{color:var(--muted);font-size:13px}
-
-    /* Right column - tabela */
     .table-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
     .btn{
       background:linear-gradient(180deg,var(--accent), #5a7ef0);
@@ -138,12 +130,9 @@
     }
     .row.header{font-weight:700;color:var(--muted);font-size:13px}
     .row0{background:linear-gradient(90deg, rgba(124,156,255,0.03), rgba(124,156,255,0.01));}
-
     .team-name{font-weight:700}
     .muted{color:var(--muted);font-size:13px}
     .rank{font-weight:900;color:var(--accent)}
-
-    /* Modal */
     .modal {
       display: none;
       position: fixed;
@@ -180,8 +169,6 @@
       gap: 10px;
       justify-content: center;
     }
-
-    /* Status message */
     .status {
       padding: 8px 12px;
       border-radius: 8px;
@@ -204,14 +191,11 @@
       color: #60a5fa;
       border: 1px solid rgba(59, 130, 246, 0.2);
     }
-
-    /* small screens */
     @media (max-width:980px){
       .container{grid-template-columns:1fr; padding:16px}
       .matches{max-height:55vh}
       .row{grid-template-columns: 1fr 40px 36px 36px 36px 46px 46px 56px 56px;font-size:14px}
     }
-    /* subtle animation */
     .pulse{
       animation: pulse 700ms ease;
     }
@@ -232,7 +216,6 @@
       </div>
     </header>
 
-    <!-- Lijeva kolona: raspored -->
     <section class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div>
@@ -253,7 +236,6 @@
       <div id="status" class="status"></div>
     </section>
 
-    <!-- Desna kolona: tabela -->
     <aside class="card">
       <div class="table-head">
         <div>
@@ -267,18 +249,15 @@
       </div>
 
       <div id="standings" class="standings">
-        <!-- header -->
         <div class="row header">
           <div>Tim</div><div>U</div><div>W</div><div>D</div><div>L</div><div>GF</div><div>GA</div><div>GD</div><div>Pts</div>
         </div>
-        <!-- rows inserted by JS -->
       </div>
     </aside>
 
     <footer class="muted">Real-time sinhronizacija • Svi uređaji vide iste rezultate • Šifra za brisanje: MNT123</footer>
   </div>
 
-  <!-- Modal za šifru -->
   <div id="passwordModal" class="modal">
     <div class="modal-content">
       <h3>Unesi šifru za brisanje</h3>
@@ -291,15 +270,15 @@
   </div>
 
   <script>
-    // Teams (provided)
+    // Teams
     const TEAMS = ["Vladimir","Mirko","Uroš","Jovan","Lazar","Bojan","Miljan","Nikola"];
     const PASSWORD = "MNT123";
     
-    // JSONBin.io konfiguracija - BESPLATAN i POUZDAN
-    const JSONBIN_BIN_ID = '67b1a7e1dc74654018ac8a5d'; // Ovo je ID tvoje "baze"
-    const JSONBIN_MASTER_KEY = '$2a$10$Ql4oW13nR2f5uV5sE5k5E.7b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b'; // Ovo je tvoj API key
+    // ⚠️ ZAMENI OVO SA TVOJIM PODACIMA ⚠️
+    const JSONBIN_BIN_ID = '690c7853ae596e708f481ea8'; // Bin ID iz URL-a
+    const JSONBIN_MASTER_KEY = '$2a$10$i8n78C9v1VhAsJ5894B07u1V0c/YWICUe9sXtgnB2OmOFDyOK3oi.'; // API Key iz Account Settings
 
-    // Generate double round-robin schedule (circle method)
+    // Generate schedule
     function generateSchedule(teams){
       const t = [...teams];
       if (t.length % 2 !== 0) t.push(null);
@@ -313,19 +292,15 @@
           if (a && b) pairs.push([a,b]);
         }
         rounds.push(pairs);
-        // rotate (keep first)
         t.splice(1,0,t.pop());
       }
-      // duplicate with swapped home/away for second half
       const secondHalf = rounds.map(rnd => rnd.map(([h,g]) => [g,h]));
-      return rounds.concat(secondHalf); // total 2*(n-1)
+      return rounds.concat(secondHalf);
     }
 
-    const schedule = generateSchedule(TEAMS); // 14 rounds for 8 teams
-
-    // Render matches in DOM
+    const schedule = generateSchedule(TEAMS);
     const matchesContainer = document.getElementById('matches');
-    const matchesList = []; // flat list for easier indexing
+    const matchesList = [];
 
     function renderMatches(){
       matchesContainer.innerHTML = '';
@@ -380,27 +355,24 @@
     }
 
     function computeStandings(){
-      // initialize
       const stats = {};
       TEAMS.forEach(t => stats[t] = {team:t, played:0, win:0, draw:0, loss:0, gf:0, ga:0, gd:0, pts:0});
 
-      // loop matches, read scores
       matchesList.forEach(m => {
         const hVal = m.el.querySelector('input[data-side="home"]').value;
         const aVal = m.el.querySelector('input[data-side="away"]').value;
-        if (hVal === '' || aVal === '') return; // skip if not filled
+        if (hVal === '' || aVal === '') return;
         const h = parseInt(hVal,10);
         const a = parseInt(aVal,10);
         if (isNaN(h) || isNaN(a)) return;
-        // update played
+        
         stats[m.home].played++;
         stats[m.away].played++;
-        // goals
         stats[m.home].gf += h;
         stats[m.home].ga += a;
         stats[m.away].gf += a;
         stats[m.away].ga += h;
-        // result
+        
         if (h > a){
           stats[m.home].win++; stats[m.home].pts += 3;
           stats[m.away].loss++;
@@ -413,10 +385,8 @@
         }
       });
 
-      // finalize gd
       TEAMS.forEach(t => { stats[t].gd = stats[t].gf - stats[t].ga; });
 
-      // sort
       const table = Object.values(stats).sort((a,b) => {
         if (b.pts !== a.pts) return b.pts - a.pts;
         if (b.gd !== a.gd) return b.gd - a.gd;
@@ -429,7 +399,6 @@
 
     function renderStandings(table){
       const container = document.getElementById('standings');
-      // remove old rows except header
       container.querySelectorAll('.row:not(.header)').forEach(n => n.remove());
       table.forEach((r, idx) => {
         const div = document.createElement('div');
@@ -446,12 +415,10 @@
           <div class="rank">${r.pts}</div>
         `;
         container.appendChild(div);
-        // small timeout for animation
         setTimeout(()=>div.classList.remove('pulse'),800);
       });
     }
 
-    // Status functions
     function showStatus(message, type = 'success') {
       const statusEl = document.getElementById('status');
       statusEl.textContent = message;
@@ -462,7 +429,6 @@
       }, 3000);
     }
 
-    // Čuvanje i učitavanje rezultata
     function getResultsData() {
       const results = [];
       matchesList.forEach(m => {
@@ -488,7 +454,7 @@
       });
     }
 
-    // JSONBin.io funkcije - POUZDANO REŠENJE
+    // JSONBin funkcije
     async function saveToJSONBin() {
       const results = getResultsData();
       const data = {
@@ -515,9 +481,7 @@
           throw new Error(`JSONBin error: ${response.status}`);
         }
 
-        const result = await response.json();
         showStatus('Rezultati sačuvani! Svi vide promene.');
-        return result;
       } catch (error) {
         console.error('Greška pri čuvanju:', error);
         showStatus('Greška pri čuvanju, koristim lokalnu memoriju', 'error');
@@ -555,7 +519,6 @@
       }
     }
 
-    // Fallback localStorage funkcije
     function saveToLocalStorage() {
       const results = getResultsData();
       localStorage.setItem('miniLigaResults', JSON.stringify(results));
@@ -575,7 +538,6 @@
       return false;
     }
 
-    // Modal functions
     function showPasswordModal() {
       document.getElementById('passwordModal').style.display = 'block';
       document.getElementById('passwordInput').focus();
@@ -586,7 +548,6 @@
       document.getElementById('passwordInput').value = '';
     }
 
-    // Debounce funkcija za automatsko čuvanje
     let saveDebounce;
     function scheduleSave() {
       clearTimeout(saveDebounce);
@@ -598,7 +559,6 @@
     // init
     renderMatches();
     
-    // Učitaj sačuvane rezultate pri pokretanju
     document.addEventListener('DOMContentLoaded', async function() {
       if (await loadFromJSONBin()) {
         const table = computeStandings();
@@ -634,10 +594,9 @@
         });
         renderStandings(TEAMS.map(t => ({team:t, played:0, win:0, draw:0, loss:0, gf:0, ga:0, gd:0, pts:0})));
         
-        // Obriši sve - pošalji prazne rezultate na server
         const emptyData = {
           teams: TEAMS,
-          results: getResultsData(), // ovo će biti prazno sada
+          results: getResultsData(),
           timestamp: new Date().toISOString(),
           standings: TEAMS.map(t => ({team:t, played:0, win:0, draw:0, loss:0, gf:0, ga:0, gd:0, pts:0}))
         };
@@ -663,9 +622,7 @@
 
     document.getElementById('cancelClear').addEventListener('click', hidePasswordModal);
 
-    // optional: fill example data
     document.getElementById('fillExample').addEventListener('click',()=>{
-      // random small results for demo
       matchesList.forEach((m, i) => {
         const a = Math.floor(Math.random()*4);
         const b = Math.floor(Math.random()*4);
@@ -675,18 +632,16 @@
       document.getElementById('updateBtn').click();
     });
 
-    // Automatsko čuvanje pri promeni rezultata
     let debounce;
     matchesContainer.addEventListener('input', ()=>{
       clearTimeout(debounce);
       debounce = setTimeout(()=> {
         const table = computeStandings();
         renderStandings(table);
-        scheduleSave(); // Automatski sačuvaj nakon promene
+        scheduleSave();
       }, 700);
     });
 
-    // Zatvori modal klikom izvan
     window.addEventListener('click', function(event) {
       const modal = document.getElementById('passwordModal');
       if (event.target === modal) {
@@ -694,7 +649,6 @@
       }
     });
 
-    // Automatsko osvežavanje svakih 30 sekundi
     setInterval(async () => {
       if (await loadFromJSONBin()) {
         const table = computeStandings();
