@@ -1,414 +1,210 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="sr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mini Liga – Round Robin</title>
-  <style>
-    :root{
-      --bg:#0b0f14;
-      --card:#0f1720;
-      --muted:#9aa5b1;
-      --accent:#7c9cff;
-      --glass: rgba(255,255,255,0.04);
-      --glass-strong: rgba(0,0,0,0.5);
-      --radius:14px;
-      --glass-border: rgba(255,255,255,0.04);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    }
-    html,body{height:100%;margin:0;background:var(--bg);color:#e6eef6}
-    /* full-screen background image (logo.jpg) with dark overlay */
-    body::before{
-      content:"";
-      position:fixed;
-      inset:0;
-      background-image:url('logo.jpg');
-      background-size:cover;
-      background-position:center;
-      opacity:0.09;
-      filter:blur(1px) saturate(0.7);
-      z-index:0;
-    }
-    body::after{
-      content:"";
-      position:fixed;
-      inset:0;
-      background:linear-gradient(180deg, rgba(2,6,11,0.6), rgba(2,8,14,0.9));
-      z-index:0;
-    }
-
-    .container{
-      position:relative;
-      z-index:1;
-      max-width:1150px;
-      margin:36px auto;
-      padding:28px;
-      display:grid;
-      gap:20px;
-      grid-template-columns: 1fr 420px;
-    }
-
-    header{
-      grid-column:1/-1;
-      display:flex;
-      align-items:center;
-      gap:16px;
-      padding:14px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-      border-radius:18px;
-      box-shadow: 0 6px 20px rgba(2,8,20,0.6);
-      border:1px solid rgba(255,255,255,0.03);
-    }
-    header img{
-      width:64px;height:64px;object-fit:contain;border-radius:10px;background:var(--glass-strong);padding:8px;
-    }
-    h1{font-size:20px;margin:0}
-    .subtitle{color:var(--muted);font-size:13px}
-
-    /* Cards */
-    .card{
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-      border-radius:var(--radius);
-      padding:18px;
-      box-shadow: 0 8px 30px rgba(2,6,14,0.5);
-      border:1px solid var(--glass-border);
-    }
-
-    /* Raspored list */
-    .matches{
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-      max-height:65vh;
-      overflow:auto;
-      padding-right:6px;
-    }
-    .match{
-      display:grid;
-      grid-template-columns: 1fr 1fr 110px;
-      gap:8px;
-      align-items:center;
-      padding:10px;
-      border-radius:12px;
-      background: linear-gradient(90deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
-      transition: transform .18s ease, box-shadow .18s ease;
-      border:1px solid rgba(255,255,255,0.02);
-    }
-    .match:hover{transform:translateY(-4px); box-shadow:0 10px 30px rgba(2,6,20,0.5)}
-    .team{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      font-weight:600;
-    }
-    .team small{color:var(--muted);font-weight:400}
-    .score{
-      display:flex;
-      gap:8px;
-      justify-content:center;
-      align-items:center;
-    }
-    .score input{
-      width:42px;background:transparent;border:1px solid rgba(255,255,255,0.04);padding:6px;border-radius:8px;color:inherit;text-align:center;font-weight:700;
-    }
-    .kolo{color:var(--muted);font-size:13px}
-
-    /* Right column - tabela */
-    .table-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
-    .btn{
-      background:linear-gradient(180deg,var(--accent), #5a7ef0);
-      padding:10px 14px;border-radius:10px;color:white;font-weight:700;border:none;cursor:pointer;box-shadow:0 6px 20px rgba(92,124,255,0.18);
-    }
-    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);font-weight:600}
-    .standings{
-      margin-top:6px;
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-    }
-    .row{
-      display:grid;
-      grid-template-columns: 1fr 56px 44px 44px 44px 56px 56px 64px 64px;
-      gap:8px;
-      align-items:center;
-      padding:10px;border-radius:10px;
-      background: linear-gradient(90deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
-      border:1px solid rgba(255,255,255,0.02);
-    }
-    .row.header{font-weight:700;color:var(--muted);font-size:13px}
-    .row0{background:linear-gradient(90deg, rgba(124,156,255,0.03), rgba(124,156,255,0.01));}
-
-    .team-name{font-weight:700}
-    .muted{color:var(--muted);font-size:13px}
-    .rank{font-weight:900;color:var(--accent)}
-
-    /* small screens */
-    @media (max-width:980px){
-      .container{grid-template-columns:1fr; padding:16px}
-      .matches{max-height:55vh}
-      .row{grid-template-columns: 1fr 40px 36px 36px 36px 46px 46px 56px 56px;font-size:14px}
-    }
-    /* subtle animation */
-    .pulse{
-      animation: pulse 700ms ease;
-    }
-    @keyframes pulse{
-      0%{transform:scale(0.995);opacity:0.8}
-      100%{transform:scale(1);opacity:1}
-    }
-    footer{grid-column:1/-1;text-align:center;color:var(--muted);font-size:13px;margin-top:8px}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini Liga – Round Robin</title>
+<style>
+  body {
+    margin: 0;
+    font-family: "Segoe UI", sans-serif;
+    background: #111;
+    color: #fff;
+    background-image: url("logo.jpg");
+    background-size: cover;
+    background-position: center;
+  }
+  .overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 0;
+  }
+  .container {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 20px;
+  }
+  img.logo {
+    width: 120px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(255,255,255,0.2);
+  }
+  h1 {
+    margin-top: 10px;
+    color: #00bfff;
+  }
+  table {
+    width: 90%;
+    margin: 20px auto;
+    border-collapse: collapse;
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(30,30,30,0.9);
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+  }
+  th, td {
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  th {
+    background: rgba(0,0,0,0.6);
+    color: #00bfff;
+  }
+  input {
+    width: 40px;
+    text-align: center;
+    border: none;
+    border-radius: 4px;
+    background: #222;
+    color: #fff;
+    padding: 4px;
+  }
+  button {
+    margin: 10px;
+    padding: 10px 20px;
+    background: #00bfff;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  button:hover {
+    background: #0099cc;
+  }
+</style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <img src="logo.jpg" alt="logo" />
-      <div>
-        <h1>Mini Liga – Round Robin</h1>
-        <div class="subtitle">8 timova • 14 kola (home & away) •</div>
-      </div>
-    </header>
+<div class="overlay"></div>
+<div class="container">
+  <img src="logo.jpg" class="logo" alt="Logo">
+  <h1>Mini Liga – Round Robin</h1>
+  <h2>Raspored i unos rezultata</h2>
+  <table id="matchesTable"></table>
+  <button onclick="updateTable()">Ažuriraj tabelu</button>
+  <button onclick="resetResults()">Resetuj rezultate</button>
 
-    <!-- Lijeva kolona: raspored -->
-    <section class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div>
-          <div style="font-weight:800">Raspored utakmica</div>
-          <div class="muted" style="font-size:13px">Unesi rezultate pa pritisni <strong>Ažuriraj tabelu</strong></div>
-        </div>
-        <div class="kolo">14 kola</div>
-      </div>
+  <h2>Rang tabela</h2>
+  <table id="standingsTable"></table>
+</div>
 
-      <div id="matches" class="matches"></div>
+<script>
+const teams = ["Vladimir","Mirko","Uroš","Jovan","Lazar","Bojan","Miljan","Nikola"];
+let matches = [];
 
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button id="updateBtn" class="btn">Ažuriraj tabelu</button>
-        <button id="clearBtn" class="btn ghost">Očisti rezultate</button>
-        <button id="fillExample" class="btn ghost">Popuni primer</button>
-      </div>
-    </section>
-
-    <!-- Desna kolona: tabela -->
-    <aside class="card">
-      <div class="table-head">
-        <div>
-          <div style="font-weight:800">Tabela</div>
-          <div class="muted" style="font-size:13px">Automatski prikaz po bodovima → gol razlika → dati golovi</div>
-        </div>
-        <div style="text-align:right">
-          <div class="muted" style="font-size:12px">Timovi: 8</div>
-          <div class="muted" style="font-size:12px">Kola: 14</div>
-        </div>
-      </div>
-
-      <div id="standings" class="standings">
-        <!-- header -->
-        <div class="row header">
-          <div>Tim</div><div>U</div><div>W</div><div>D</div><div>L</div><div>GF</div><div>GA</div><div>GD</div><div>Pts</div>
-        </div>
-        <!-- rows inserted by JS -->
-      </div>
-    </aside>
-
-    <footer class="muted">Made for FC2026MNT
-  </div>
-
-  <script>
-    // Teams (provided)
-    const TEAMS = ["Vladimir","Mirko","Uroš","Jovan","Lazar","Bojan","Miljan","Nikola"];
-
-    // Generate double round-robin schedule (circle method)
-    function generateSchedule(teams){
-      const t = [...teams];
-      if (t.length % 2 !== 0) t.push(null);
-      const n = t.length;
-      const rounds = [];
-      for (let r = 0; r < n - 1; r++){
-        const pairs = [];
-        for (let i = 0; i < n/2; i++){
-          const a = t[i];
-          const b = t[n - 1 - i];
-          if (a && b) pairs.push([a,b]);
-        }
-        rounds.push(pairs);
-        // rotate (keep first)
-        t.splice(1,0,t.pop());
-      }
-      // duplicate with swapped home/away for second half
-      const secondHalf = rounds.map(rnd => rnd.map(([h,g]) => [g,h]));
-      return rounds.concat(secondHalf); // total 2*(n-1)
+// Generate all matches (home and away)
+function generateMatches() {
+  matches = [];
+  for (let i = 0; i < teams.length; i++) {
+    for (let j = 0; j < teams.length; j++) {
+      if (i !== j) matches.push({home: teams[i], away: teams[j], homeGoals: "", awayGoals: ""});
     }
+  }
+}
 
-    const schedule = generateSchedule(TEAMS); // 14 rounds for 8 teams
+// Load saved results
+function loadResults() {
+  const saved = localStorage.getItem("ligaRezultati");
+  if (saved) matches = JSON.parse(saved);
+  else generateMatches();
+}
 
-    // Render matches in DOM
-    const matchesContainer = document.getElementById('matches');
-    const matchesList = []; // flat list for easier indexing
+// Save results
+function saveResults() {
+  localStorage.setItem("ligaRezultati", JSON.stringify(matches));
+}
 
-    function renderMatches(){
-      matchesContainer.innerHTML = '';
-      schedule.forEach((round, idx) => {
-        const roundNum = idx+1;
-        const roundHeader = document.createElement('div');
-        roundHeader.className = 'muted';
-        roundHeader.style.margin = '6px 0 0 4px';
-        roundHeader.textContent = `Kolo ${roundNum}`;
-        matchesContainer.appendChild(roundHeader);
-        round.forEach((pair, i) => {
-          const [home, away] = pair;
-          const matchEl = document.createElement('div');
-          matchEl.className = 'match';
-          matchEl.dataset.round = roundNum;
-          matchEl.dataset.index = matchesList.length;
-
-          const left = document.createElement('div');
-          left.className = 'team';
-          left.innerHTML = `<div style="font-size:13px">${home}</div><small class="muted"> (domaćin)</small>`;
-
-          const right = document.createElement('div');
-          right.className = 'team';
-          right.style.justifySelf = 'end';
-          right.innerHTML = `<small class="muted">(gost)</small><div style="font-size:13px">${away}</div>`;
-
-          const score = document.createElement('div');
-          score.className = 'score';
-          const inputHome = document.createElement('input');
-          inputHome.type = 'number'; inputHome.min = 0; inputHome.placeholder = '-';
-          inputHome.dataset.side = 'home';
-          const sep = document.createElement('div'); sep.textContent=':'; sep.style.opacity=0.6;fontWeight=700;
-          const inputAway = document.createElement('input');
-          inputAway.type = 'number'; inputAway.min = 0; inputAway.placeholder = '-';
-          inputAway.dataset.side = 'away';
-
-          score.appendChild(inputHome);
-          score.appendChild(sep);
-          score.appendChild(inputAway);
-
-          matchEl.appendChild(left);
-          matchEl.appendChild(right);
-          matchEl.appendChild(score);
-
-          matchesContainer.appendChild(matchEl);
-
-          matchesList.push({
-            home, away, el: matchEl, inputHome, inputAway, round: roundNum
-          });
-        });
-      });
-    }
-
-    function computeStandings(){
-      // initialize
-      const stats = {};
-      TEAMS.forEach(t => stats[t] = {team:t, played:0, win:0, draw:0, loss:0, gf:0, ga:0, gd:0, pts:0});
-
-      // loop matches, read scores
-      matchesList.forEach(m => {
-        const hVal = m.el.querySelector('input[data-side="home"]').value;
-        const aVal = m.el.querySelector('input[data-side="away"]').value;
-        if (hVal === '' || aVal === '') return; // skip if not filled
-        const h = parseInt(hVal,10);
-        const a = parseInt(aVal,10);
-        if (isNaN(h) || isNaN(a)) return;
-        // update played
-        stats[m.home].played++;
-        stats[m.away].played++;
-        // goals
-        stats[m.home].gf += h;
-        stats[m.home].ga += a;
-        stats[m.away].gf += a;
-        stats[m.away].ga += h;
-        // result
-        if (h > a){
-          stats[m.home].win++; stats[m.home].pts += 3;
-          stats[m.away].loss++;
-        } else if (h < a){
-          stats[m.away].win++; stats[m.away].pts += 3;
-          stats[m.home].loss++;
-        } else {
-          stats[m.home].draw++; stats[m.away].draw++;
-          stats[m.home].pts += 1; stats[m.away].pts += 1;
-        }
-      });
-
-      // finalize gd
-      TEAMS.forEach(t => { stats[t].gd = stats[t].gf - stats[t].ga; });
-
-      // sort
-      const table = Object.values(stats).sort((a,b) => {
-        if (b.pts !== a.pts) return b.pts - a.pts;
-        if (b.gd !== a.gd) return b.gd - a.gd;
-        if (b.gf !== a.gf) return b.gf - a.gf;
-        return a.team.localeCompare(b.team);
-      });
-
-      return table;
-    }
-
-    function renderStandings(table){
-      const container = document.getElementById('standings');
-      // remove old rows except header
-      container.querySelectorAll('.row:not(.header)').forEach(n => n.remove());
-      table.forEach((r, idx) => {
-        const div = document.createElement('div');
-        div.className = 'row pulse' + (idx==0 ? ' row0':'');
-        div.innerHTML = `
-          <div class="team-name">${idx+1}. ${r.team}</div>
-          <div class="muted">${r.played}</div>
-          <div class="muted">${r.win}</div>
-          <div class="muted">${r.draw}</div>
-          <div class="muted">${r.loss}</div>
-          <div class="muted">${r.gf}</div>
-          <div class="muted">${r.ga}</div>
-          <div class="muted">${r.gd}</div>
-          <div class="rank">${r.pts}</div>
-        `;
-        container.appendChild(div);
-        // small timeout for animation
-        setTimeout(()=>div.classList.remove('pulse'),800);
-      });
-    }
-
-    // init
+// Reset results
+function resetResults() {
+  if (confirm("Da li želiš da obrišeš sve rezultate?")) {
+    localStorage.removeItem("ligaRezultati");
+    generateMatches();
     renderMatches();
-    document.getElementById('updateBtn').addEventListener('click',()=>{
-      const table = computeStandings();
-      renderStandings(table);
-    });
-    document.getElementById('clearBtn').addEventListener('click',()=>{
-      matchesList.forEach(m => {
-        m.el.querySelector('input[data-side="home"]').value='';
-        m.el.querySelector('input[data-side="away"]').value='';
-      });
-      // clear standings view
-      renderStandings(TEAMS.map(t => ({team:t, played:0, win:0, draw:0, loss:0, gf:0, ga:0, gd:0, pts:0})));
-    });
+    updateTable();
+  }
+}
 
-    // optional: fill example data
-    document.getElementById('fillExample').addEventListener('click',()=>{
-      // random small results for demo
-      matchesList.forEach((m, i) => {
-        const a = Math.floor(Math.random()*4);
-        const b = Math.floor(Math.random()*4);
-        m.el.querySelector('input[data-side="home"]').value = a;
-        m.el.querySelector('input[data-side="away"]').value = b;
-      });
-      document.getElementById('updateBtn').click();
-    });
+// Render match table
+function renderMatches() {
+  const table = document.getElementById("matchesTable");
+  table.innerHTML = "<tr><th>Domaćin</th><th>Golovi</th><th>Gost</th><th>Golovi</th></tr>";
+  matches.forEach((m, i) => {
+    table.innerHTML += `
+      <tr>
+        <td>${m.home}</td>
+        <td><input type="number" min="0" value="${m.homeGoals}" onchange="setScore(${i}, 'home', this.value)"></td>
+        <td>${m.away}</td>
+        <td><input type="number" min="0" value="${m.awayGoals}" onchange="setScore(${i}, 'away', this.value)"></td>
+      </tr>`;
+  });
+}
 
-    // initial empty table
-    renderStandings(TEAMS.map(t => ({team:t, played:0, win:0, draw:0, loss:0, gf:0, ga:0, gd:0, pts:0})));
+// Update score in array
+function setScore(index, side, value) {
+  matches[index][side + "Goals"] = value;
+  saveResults();
+}
 
-    // nice UX: enter key on score inputs triggers update after small debounce
-    let debounce;
-    matchesContainer.addEventListener('input', ()=>{
-      clearTimeout(debounce);
-      debounce = setTimeout(()=> {
-        // small visual auto-update without clicking
-        const table = computeStandings();
-        renderStandings(table);
-      }, 700);
-    });
-  </script>
+// Calculate standings
+function updateTable() {
+  const standings = teams.map(t => ({
+    team: t, played: 0, win: 0, draw: 0, loss: 0, gf: 0, ga: 0, points: 0
+  }));
+
+  matches.forEach(m => {
+    if (m.homeGoals !== "" && m.awayGoals !== "") {
+      const home = standings.find(t => t.team === m.home);
+      const away = standings.find(t => t.team === m.away);
+      const hg = parseInt(m.homeGoals), ag = parseInt(m.awayGoals);
+      home.played++; away.played++;
+      home.gf += hg; home.ga += ag;
+      away.gf += ag; away.ga += hg;
+
+      if (hg > ag) { home.win++; away.loss++; home.points += 3; }
+      else if (hg < ag) { away.win++; home.loss++; away.points += 3; }
+      else { home.draw++; away.draw++; home.points++; away.points++; }
+    }
+  });
+
+  standings.sort((a,b) => 
+    b.points - a.points ||
+    (b.gf - b.ga) - (a.gf - a.ga) ||
+    b.gf - a.gf
+  );
+
+  const table = document.getElementById("standingsTable");
+  table.innerHTML = `
+    <tr>
+      <th>Poz</th><th>Tim</th><th>Utakmice</th><th>Pobede</th>
+      <th>Nerešeno</th><th>Porazi</th><th>Dati</th><th>Primljeni</th>
+      <th>Gol razlika</th><th>Bodovi</th>
+    </tr>
+  `;
+  standings.forEach((t,i) => {
+    table.innerHTML += `
+      <tr>
+        <td>${i+1}</td>
+        <td>${t.team}</td>
+        <td>${t.played}</td>
+        <td>${t.win}</td>
+        <td>${t.draw}</td>
+        <td>${t.loss}</td>
+        <td>${t.gf}</td>
+        <td>${t.ga}</td>
+        <td>${t.gf - t.ga}</td>
+        <td>${t.points}</td>
+      </tr>`;
+  });
+  saveResults();
+}
+
+// Initial load
+loadResults();
+renderMatches();
+updateTable();
+</script>
 </body>
 </html>
